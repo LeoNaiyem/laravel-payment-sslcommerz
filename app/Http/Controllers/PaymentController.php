@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Raziul\Sslcommerz\Facades\Sslcommerz;
 
@@ -47,22 +48,46 @@ class PaymentController extends Controller
 
     public function success(Request $request)
     {
-        // Verify transaction with SSLCommerz hash check
-        if (SslCommerz::validate($request->all())) {
-            return "✅ Payment Successful. Transaction ID: " . $request->tran_id;
+        $validated = SslCommerz::orderValidate($request->all(), $request->tran_id, $request->amount, $request->currency);
+
+        if ($validated) {
+            Payment::create([
+                'tran_id' => $request->tran_id,
+                'amount' => $request->amount,
+                'currency' => $request->currency,
+                'status' => 'SUCCESS',
+                'card_type' => $request->card_type ?? null,
+                'card_no' => $request->card_no ?? null,
+            ]);
+
+            return "✅ Payment Successful! Transaction ID: " . $request->tran_id;
         }
 
-        return "⚠️ Invalid transaction data.";
+        return "⚠️ Validation Failed!";
     }
 
     public function fail(Request $request)
     {
-        return "❌ Payment Failed.";
+        Payment::create([
+            'tran_id' => $request->tran_id ?? uniqid(),
+            'amount' => $request->amount ?? 0,
+            'currency' => $request->currency ?? 'BDT',
+            'status' => 'FAILED',
+        ]);
+
+        return "❌ Payment Failed!";
     }
 
     public function cancel(Request $request)
     {
-        return "⚠️ Payment Cancelled.";
+        Payment::create([
+            'tran_id' => $request->tran_id ?? uniqid(),
+            'amount' => $request->amount ?? 0,
+            'currency' => $request->currency ?? 'BDT',
+            'status' => 'CANCELLED',
+        ]);
+
+        return "⚠️ Payment Cancelled!";
     }
 
     public function ipn(Request $request)
