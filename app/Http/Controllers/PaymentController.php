@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Raziul\Sslcommerz\Facades\Sslcommerz;
+
+class PaymentController extends Controller
+{
+    public function payNow()
+    {
+        $post_data = [
+            'total_amount' => 100,
+            'currency' => 'BDT',
+            'tran_id' => uniqid(),
+
+            'cus_name' => 'John Doe',
+            'cus_email' => 'john@example.com',
+            'cus_add1' => 'Dhaka',
+            'cus_add2' => 'Dhaka',
+            'cus_city' => 'Dhaka',
+            'cus_state' => 'Dhaka',
+            'cus_postcode' => '1000',
+            'cus_country' => 'Bangladesh',
+            'cus_phone' => '01711111111',
+
+            'ship_name' => 'John Doe',
+            'ship_add1' => 'Dhaka',
+            'ship_city' => 'Dhaka',
+            'ship_country' => 'Bangladesh',
+
+            'shipping_method' => 'NO',
+            'product_name' => 'Test Product',
+            'product_category' => 'General',
+            'product_profile' => 'general',
+        ];
+
+
+        $paymentResponse = SslCommerz::makePayment($post_data);
+
+        // ✅ Send the form/html directly so browser auto-redirects to SSLCommerz
+        // dd($paymentResponse->redirectGatewayURL());
+
+        return redirect()->away($paymentResponse->redirectGatewayURL());
+    }
+
+
+    public function success(Request $request)
+    {
+        // Verify transaction with SSLCommerz hash check
+        if (SslCommerz::validate($request->all())) {
+            return "✅ Payment Successful. Transaction ID: " . $request->tran_id;
+        }
+
+        return "⚠️ Invalid transaction data.";
+    }
+
+    public function fail(Request $request)
+    {
+        return "❌ Payment Failed.";
+    }
+
+    public function cancel(Request $request)
+    {
+        return "⚠️ Payment Cancelled.";
+    }
+
+    public function ipn(Request $request)
+    {
+        return "📩 IPN Received.";
+    }
+
+}
